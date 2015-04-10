@@ -11,19 +11,18 @@ import sys
 from HTTPRequest import HTTPRequest
 
 HOST = 'localhost'
-PORT = 9999
 BUFF_LEN = 8192
 
 cache = {}
 
 def main():
-  global PORT
-
   if sys.argv[1]:
-    PORT = int(sys.argv[1])
+    port = int(sys.argv[1])
+  else:
+    port = 9999
 
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  s.bind((HOST, PORT))
+  s.bind((HOST, port))
   s.listen(10)
 
   while 1:
@@ -36,21 +35,16 @@ def handle_req(conn, addr):
   if not req_str:
     return
 
-  print "Got " + req_str
-
   req_key = req_str.split('\n')[0]
   if req_key in cache.keys():
-    # print "Cache HIT:"
-    # print "Key: " + req_key
-    # print "Val: " + cache[req_key]
+    print "Cache HIT:"
+    print "Key: " + req_key
     resp_str = cache[req_key]
   else:
-    # print "Relaying request"
+    print "Cache MISS... Relaying request"
     resp_str = relay_request(req_str)
     cache[req_key] = resp_str
 
-  # print "Sending back:"
-  # print resp_str
   conn.send(resp_str)
 
 
