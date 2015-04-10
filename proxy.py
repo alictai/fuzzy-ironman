@@ -5,7 +5,6 @@
 # a5 - HTTP Proxy
 
 import httplib
-# import request
 import socket
 import sys
 
@@ -27,24 +26,37 @@ def main():
 
   while 1:
     conn, addr = s.accept()
-    print 'Connected with ' + addr[0] + ':' + str(addr[1])
-    while 1:
-      handle_req(conn, addr)
-       
+    handle_req(conn, addr)
+    conn.close()
+
 def handle_req(conn, addr):
   req_str = conn.recv(BUFF_LEN)
+  if not req_str:
+    return
+
   print "Got " + req_str
   req = HTTPRequest(req_str)
-  print req.error_code     
-  print req.command        
-  print req.path           
-  print req.request_version
-  print len(req.headers)   
-  print req.headers.keys() 
-  print req.headers['host']
 
-def send_http():
-  pass
+  http_conn = httplib.HTTPConnection(req.headers['host'])
+  http_conn.connect()
+
+
+  http_conn.request(req.command, req.path, headers=req.headers.dict)
+  resp = http_conn.getresponse()
+  content = resp.read()
+
+  headers = resp.getheaders()
+
+  resp.version = str(float(resp.version)/10)
+
+  headers_str = '\n'.join(map((lambda (k, v): '%s: %s' % (k, v)), headers))
+  resp_str = 'HTTP %s %s %s\n%s\n%s' % (resp.version, resp.status, resp.reason, headers_str, content)
+
+  print "Sending back:"
+  print resp_str
+  conn.send(resp_str)
+
+  http_conn.close()
 
 if __name__ == '__main__':
 	main()
