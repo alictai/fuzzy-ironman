@@ -9,6 +9,7 @@ import socket
 import sys
 import threading
 import re
+import concprint
 
 from HTTPRequest import HTTPRequest
 
@@ -17,6 +18,8 @@ BUFF_LEN = 8192
 
 cache = {}
 past_reqs = set()
+
+stdout_mutex = threading.Lock()
 
 def main():
   if sys.argv[1]:
@@ -34,36 +37,32 @@ def main():
     t.start()
     n = len(threading.enumerate())
 
-    # if n > 1:
-    #   print '%i threads!!' % n
-
 def handle_req(conn, addr):
   req_str = conn.recv(BUFF_LEN)
   if not req_str:
     return
 
   resp_str = check_cache(req_str)
-  conn.send(resp_str)
+  if resp_str:
+    conn.send(resp_str)
+    links = detect_links(resp_str)
+    prefetch_links(links, req_str)
 
-  links = detect_links(resp_str)
-  prefetch_links(links, req_str)
   conn.close()
 
 
 def check_cache(req_str, force=False):
   req_key = req_str.split('\n')[0] # First line of req
   if req_key in cache.keys():
-    print "Cache HIT:"
-    print "---> Key: " + req_key
+    concprint.prt("---> Cache HIT: " + req_key, stdout_mutex)
     resp_str = cache[req_key]
   else:
-    print "Cache MISS... Relaying request"
-    print "---> Key: " + req_key
+    concprint.prt("---> Cache MISS: " + req_key, stdout_mutex)
     resp_str = relay_request(req_str)
     if not resp_str:
       return
     if force or req_key in past_reqs: # Cache if requested multiple times
-      # print "---> Cache updated with " + req_key
+      # concprint.prt("---> Cache updated with " + req_key, stdout_mutex)
       cache[req_key] = resp_str
     else:
       past_reqs.add(req_key)
@@ -79,14 +78,15 @@ def detect_links(response):
 def prefetch_links(links, req):
   # print links
   for l in links:
-    if l[-5:] == ".html" or l[-4] == ".jpg" or l[-5] == ".jpeg" or l[-4] == ".png" or l[-4] == ".gif":
-      t = threading.Thread(target=prefetch, args=[l, req])
-      t.start()
-      # prefetch(l, req)
+    if len(l) > 3:
+      if l[-4] == ".jpg" or l[-4] == ".png" or l[-4] == ".gif" or l[-5:] == ".html" or l[-5] == ".jpeg":
+        t = threading.Thread(target=prefetch, args=[l, req])
+        t.start()
+        # prefetch(l, req)
 
 
 def prefetch(link, req):
-  print "PREFETCHING: " + link
+  # concprint.prt("PREFETCHING: " + link, stdout_mutex)
   line1 = req.split('\n')[0]
   url = line1.split(' ')[1]
   if (link[:7] != "http://"):
