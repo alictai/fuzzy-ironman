@@ -46,7 +46,7 @@ def handle_req(conn, addr):
   if resp_str:
     conn.send(resp_str)
     links = detect_links(resp_str)
-    prefetch_links(links, req_str)
+    # prefetch_links(links, req_str)
 
   conn.close()
 

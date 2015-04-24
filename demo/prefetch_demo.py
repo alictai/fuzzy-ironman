@@ -76,6 +76,7 @@ def detect_links(response):
 
 
 def prefetch_links(links, req):
+  prt('Found links: %s' % str(links), stdout_mutex)
   for l in links:
     if len(l) > 3:
       if l[-4] == ".jpg" or l[-4] == ".png" or l[-4] == ".gif" or l[-5:] == ".html" or l[-5] == ".jpeg":
@@ -84,6 +85,7 @@ def prefetch_links(links, req):
 
 
 def prefetch(link, req):
+  prt("PREFETCHING: " + link, stdout_mutex)
   line1 = req.split('\n')[0]
   url = line1.split(' ')[1]
   if (link[:7] != "http://"):

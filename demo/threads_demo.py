@@ -36,6 +36,9 @@ def main():
     t = threading.Thread(target=handle_req, args=[conn, addr])
     t.start()
     n = len(threading.enumerate())
+    if n > 1:
+      prt('Thread count: %i' % n, stdout_mutex)
+
 
 def handle_req(conn, addr):
   req_str = conn.recv(BUFF_LEN)
@@ -46,7 +49,7 @@ def handle_req(conn, addr):
   if resp_str:
     conn.send(resp_str)
     links = detect_links(resp_str)
-    prefetch_links(links, req_str)
+    # prefetch_links(links, req_str)
 
   conn.close()
 
@@ -54,15 +57,12 @@ def handle_req(conn, addr):
 def check_cache(req_str, force=False):
   req_key = req_str.split('\n')[0] # First line of req
   if req_key in cache.keys():
-    prt("+++ Cache HIT: " + req_key, stdout_mutex)
     resp_str = cache[req_key]
   else:
-    prt("XXX Cache MISS: " + req_key, stdout_mutex)
     resp_str = relay_request(req_str)
     if not resp_str:
       return
     if force or req_key in past_reqs: # Cache if requested multiple times
-      prt("--> Cache updated with " + req_key, stdout_mutex)
       cache[req_key] = resp_str
     else:
       past_reqs.add(req_key)
