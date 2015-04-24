@@ -30,6 +30,7 @@ def main():
     handle_req(conn, addr)
     conn.close()
 
+
 def handle_req(conn, addr):
   req_str = conn.recv(BUFF_LEN)
   if not req_str:
@@ -45,6 +46,7 @@ def handle_req(conn, addr):
     resp_str = relay_request(req_str)
     cache[req_key] = resp_str
 
+  print resp_str
   conn.send(resp_str)
 
 
@@ -59,7 +61,7 @@ def relay_request(req_str):
   headers = resp.getheaders()
   headers_str = '\n'.join(map((lambda (k, v): '%s: %s' % (k, v)), headers))
   resp.version = str(float(resp.version)/10)
-  resp_str = 'HTTP %s %s %s\n%s\n%s' % (resp.version, resp.status, resp.reason, headers_str, content)
+  resp_str = 'HTTP/%s %s %s\n%s\n\n%s' % (resp.version, resp.status, resp.reason, headers_str, content)
 
   http_conn.close()
   return resp_str
