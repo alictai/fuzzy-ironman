@@ -7,6 +7,7 @@
 import httplib
 import socket
 import sys
+import threading
 
 from HTTPRequest import HTTPRequest
 
@@ -27,9 +28,11 @@ def main():
 
   while 1:
     conn, addr = s.accept()
-    handle_req(conn, addr)
-    conn.close()
-
+    t = threading.Thread(target=handle_req, args=[conn, addr])
+    t.start()
+    n = len(threading.enumerate())
+    # if n > 1:
+    #   print '%i threads!!' % n
 
 def handle_req(conn, addr):
   req_str = conn.recv(BUFF_LEN)
@@ -48,12 +51,11 @@ def handle_req(conn, addr):
       return
     cache[req_key] = resp_str
     
-  # print resp_str
   conn.send(resp_str)
+  conn.close()
 
 
 def relay_request(req_str):
-  # print req_str
   req = HTTPRequest(req_str)
   if req.command == 'GET':
     http_conn = httplib.HTTPConnection(req.headers['host'])
