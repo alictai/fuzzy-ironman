@@ -44,28 +44,34 @@ def handle_req(conn, addr):
   else:
     print "Cache MISS... Relaying request"
     resp_str = relay_request(req_str)
+    if not resp_str:
+      return
     cache[req_key] = resp_str
-
-  print resp_str
+    
+  # print resp_str
   conn.send(resp_str)
 
 
 def relay_request(req_str):
+  # print req_str
   req = HTTPRequest(req_str)
-  http_conn = httplib.HTTPConnection(req.headers['host'])
-  http_conn.connect()
-  http_conn.request(req.command, req.path, headers=req.headers.dict)
-  resp = http_conn.getresponse()
-  content = resp.read()
+  if req.command == 'GET':
+    http_conn = httplib.HTTPConnection(req.headers['host'])
+    http_conn.connect()
+    http_conn.request(req.command, req.path, headers=req.headers.dict)
+    resp = http_conn.getresponse()
+    content = resp.read()
 
-  headers = resp.getheaders()
-  headers_str = '\n'.join(map((lambda (k, v): '%s: %s' % (k, v)), headers))
-  resp.version = str(float(resp.version)/10)
-  resp_str = 'HTTP/%s %s %s\n%s\n\n%s' % (resp.version, resp.status, resp.reason, headers_str, content)
+    headers = resp.getheaders()
+    headers_str = '\n'.join(map((lambda (k, v): '%s: %s' % (k, v)), headers))
+    resp.version = str(float(resp.version)/10)
+    resp_str = 'HTTP/%s %s %s\n%s\n\n%s' % (resp.version, resp.status, resp.reason, headers_str, content)
 
-  http_conn.close()
-  return resp_str
+    http_conn.close()
+    return resp_str
+  else:
+    return None
 
 
 if __name__ == '__main__':
-	main()
+  main()
