@@ -22,7 +22,7 @@ past_reqs = set()
 stdout_mutex = threading.Lock()
 
 def main():
-  if sys.argv[1]:
+  if len(sys.argv) > 1 and sys.argv[1]:
     port = int(sys.argv[1])
   else:
     port = 9999
