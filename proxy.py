@@ -79,7 +79,7 @@ def detect_links(response):
 def prefetch_links(links, req):
   # print links
   for l in links:
-    if l[-5:] == ".html":
+    if l[-5:] == ".html" or l[-4] == ".jpg" or l[-5] == ".jpeg" or l[-4] == ".png" or l[-4] == ".gif":
       t = threading.Thread(target=prefetch, args=[l, req])
       t.start()
       # prefetch(l, req)

@@ -12,6 +12,6 @@ Running Our Project:
 
 Implemented Functionality:
 - Proxy supports GET requests.
-- Caching of HTML, CSS, and JS with a policy of only caching content that has been requested more than once. 
+- Caching with a policy of only caching content that has been requested more than once. 
 - Requests/clients are handled concurrently.
-- Pre-fetching HTML, CSS, and JS that are linked to and adding them to the cache if they are not there already.
+- Pre-fetching HTML and images and adding them to the cache if they are not there already.
