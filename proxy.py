@@ -8,6 +8,7 @@ import httplib
 import socket
 import sys
 import threading
+import re
 
 from HTTPRequest import HTTPRequest
 
@@ -41,23 +42,64 @@ def handle_req(conn, addr):
   if not req_str:
     return
 
+  resp_str = check_cache(req_str)
+  conn.send(resp_str)
+
+  links = detect_links(resp_str)
+  prefetch_links(links, req_str)
+  conn.close()
+
+
+def check_cache(req_str, force=False):
   req_key = req_str.split('\n')[0] # First line of req
   if req_key in cache.keys():
     print "Cache HIT:"
-    print "Key: " + req_key
+    print "---> Key: " + req_key
     resp_str = cache[req_key]
   else:
     print "Cache MISS... Relaying request"
+    print "---> Key: " + req_key
     resp_str = relay_request(req_str)
     if not resp_str:
       return
-    if req_key in past_reqs: # Cache if requested multiple times
+    if force or req_key in past_reqs: # Cache if requested multiple times
+      # print "---> Cache updated with " + req_key
       cache[req_key] = resp_str
     else:
       past_reqs.add(req_key)
+  return resp_str
 
-  conn.send(resp_str)
-  conn.close()
+
+def detect_links(response):
+  instances = re.finditer('href[ ]*=[ ]*"([^"]*)"', response, flags=0)
+  links = [response[m.start():m.end()].replace(" ", "")[6:-1] for m in instances]
+  return links
+
+
+def prefetch_links(links, req):
+  # print links
+  for l in links:
+    if l[-5:] == ".html":
+      t = threading.Thread(target=prefetch, args=[l, req])
+      t.start()
+      # prefetch(l, req)
+
+
+def prefetch(link, req):
+  print "PREFETCHING: " + link
+  line1 = req.split('\n')[0]
+  url = line1.split(' ')[1]
+  if (link[:7] != "http://"):
+    parts = url.split('/')
+    parts[-1] = link
+    new_url = '/'.join(parts)
+    # print "---> fetching " + new_url
+    req = req.replace(url, new_url, 1)
+  else:
+    req = req.replace(url, link)
+    # print "---> fetching " + link
+  # print "---> sending request to cache " + req
+  check_cache(req, True)
 
 
 def relay_request(req_str):
