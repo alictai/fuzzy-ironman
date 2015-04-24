@@ -15,6 +15,7 @@ HOST = 'localhost'
 BUFF_LEN = 8192
 
 cache = {}
+past_reqs = set()
 
 def main():
   if sys.argv[1]:
@@ -31,6 +32,7 @@ def main():
     t = threading.Thread(target=handle_req, args=[conn, addr])
     t.start()
     n = len(threading.enumerate())
+
     # if n > 1:
     #   print '%i threads!!' % n
 
@@ -39,7 +41,7 @@ def handle_req(conn, addr):
   if not req_str:
     return
 
-  req_key = req_str.split('\n')[0]
+  req_key = req_str.split('\n')[0] # First line of req
   if req_key in cache.keys():
     print "Cache HIT:"
     print "Key: " + req_key
@@ -49,8 +51,11 @@ def handle_req(conn, addr):
     resp_str = relay_request(req_str)
     if not resp_str:
       return
-    cache[req_key] = resp_str
-    
+    if req_key in past_reqs: # Cache if requested multiple times
+      cache[req_key] = resp_str
+    else:
+      past_reqs.add(req_key)
+
   conn.send(resp_str)
   conn.close()
 
